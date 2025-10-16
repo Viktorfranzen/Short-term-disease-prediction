@@ -1,1 +1,31 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      - name: Install deps
+        run: pip install -r requirements.txt ruff pytest
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Train smoke (creates model.pkl + metrics.json)
+        run: python src/train.py
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-and-metrics
+          path: |
+            model.pkl
+            metrics.json
 
