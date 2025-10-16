@@ -1,1 +1,50 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
 
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write     # create GitHub Release
+      packages: write     # push to GHCR
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Train (produce model.pkl + metrics.json)
+        run: python src/train.py
+
+      - name: Build Docker image
+        run: docker build -t ghcr.io/${{ github.repository }}:${{ github.ref_name }} .
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image to GHCR
+        run: docker push ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+      - name: Smoke test container
+        run: |
+          docker run -d -p 8080:8080 --name api ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          sleep 5
+          curl -f http://127.0.0.1:8080/health
+
+      - name: Publish GitHub Release with metrics & changelog
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: CHANGELOG.md
+          files: |
+            metrics.json
+            CHANGELOG.md
