@@ -15,7 +15,7 @@ Xy = load_diabetes(as_frame=True)
 x_input = Xy.data
 y_target = Xy.target
 
-print("Hello world")
+
 
 
 #Split data into training and test data
