@@ -8,6 +8,18 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import precision_score, recall_score
 from sklearn.model_selection import train_test_split
 
+# --- Define compute_rmse before conditional import ---
+def compute_rmse(y_true, y_pred) -> float:  # always defined for Ruff
+    """Compute RMSE using root_mean_squared_error if available, else fallback."""
+    try:
+        # scikit-learn >= 1.3
+        from sklearn.metrics import root_mean_squared_error
+
+        return float(root_mean_squared_error(y_true, y_pred))
+    except ImportError:
+        from sklearn.metrics import mean_squared_error
+
+        return float(np.sqrt(mean_squared_error(y_true, y_pred)))
 
 
 # -----------------------------
