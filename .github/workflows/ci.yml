@@ -5,7 +5,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: ${{ github.workspace }}   # ensure "from src..." works
+      PYTHONPATH: ${{ github.workspace }}
 
     steps:
       - uses: actions/checkout@v4
@@ -22,10 +22,10 @@ jobs:
           restore-keys: |
             pip-${{ runner.os }}-
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt ruff pytest
+          pip install -r requirements.txt ruff pytest uvicorn
 
       - name: Lint
         run: ruff check .
@@ -33,13 +33,20 @@ jobs:
       - name: Train smoke (creates model.pkl + metrics.json)
         run: python src/train.py
 
-      - name: Show metrics in logs (optional)
-        run: cat metrics.json || true
+      - name: API smoke test (/health)
+        run: |
+          uvicorn src.predict_service:app --host 0.0.0.0 --port 8080 &
+          PID=$!
+          sleep 2
+          curl -fsS http://127.0.0.1:8080/health | tee health.json
+          kill $PID
 
       - name: Unit tests
         run: pytest -q
 
-      # Upload artifacts even if a prior step failed (helpful for debugging)
+      - name: Show metrics in logs
+        run: cat metrics.json || true
+
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,3 +56,9 @@ jobs:
             model.pkl
             metrics.json
           retention-days: 7
+
+      - name: Summarize metrics
+        if: success()
+        run: |
+          echo "### Metrics" >> $GITHUB_STEP_SUMMARY
+          cat metrics.json >> $GITHUB_STEP_SUMMARY
