@@ -1,9 +1,10 @@
 # src/train.py
-
 from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import root_mean_squared_error, precision_score, recall_score
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_squared_error, precision_score, recall_score
 import joblib
 import json
 import numpy as np
@@ -17,7 +18,7 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.20
 HIGH_RISK_PERCENTILE = 0.75  # top 25% progression considered "high risk"
 
-# Load the diabetes dataset
+# 1) Load data
 Xy = load_diabetes(as_frame=True)
 X = Xy.data
 y = Xy.target
